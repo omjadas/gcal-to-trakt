@@ -5,11 +5,16 @@ from time import sleep
 
 
 def read_config():
-    config_file = open("config.json")
-    config_str = config_file.read()
-    config_file.close()
-    config_data = json.loads(config_str)
+    with open("config.json") as f:
+        config_data = json.loads(f.read())
     return config_data
+
+
+def write_config(config_data):
+    with open("config.json", "w") as f:
+        json.dump(config_data, f, indent=4)
+    print("Written tokens to disk.")
+    return None
 
 
 def device_code(config_data):
@@ -43,7 +48,7 @@ def device_code(config_data):
 
 def get_token(config_data):
     values = {
-        "code": config_data["code"],
+        "code": config_data["device_code"],
         "client_id": config_data["client_id"],
         "client_secret": config_data["client_secret"]
     }
@@ -156,24 +161,23 @@ def notify(config_data, movie):
             config_data["ifttt_key"]),
         data=post_data)
 
-    response = json.loads(urlopen(request).read())
+    urlopen(request)
 
-    print(response[0])
+    print("Checked into {}".format(movie))
     return None
 
 
-# def main():
-#     config_data = read_config()
-#     code = device_code(config_data)
-#     config_data["code"] = code["device_code"]
-#     token = get_token(config_data)
-#     config_data["access_token"] = token["access_token"]
-#     config_data["refresh_token"] = token["refresh_token"]
-#     checkin(config_data)
+def main():
+    config_data = read_config()
+    code = device_code(config_data)
+    config_data["device_code"] = code["device_code"]
+    token = get_token(config_data)
+    config_data["access_token"] = token["access_token"]
+    config_data["refresh_token"] = token["refresh_token"]
+    write_config(config_data)
+
+    checkin(config_data)
 
 
-# if __name__ == "__main__":
-#     main()
-
-config_data = read_config()
-search(config_data, "Tomb Raider")
+if __name__ == "__main__":
+    main()
