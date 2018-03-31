@@ -1,5 +1,6 @@
 from urllib.request import Request, urlopen
 import json
+from time import sleep
 
 
 def read_config():
@@ -26,7 +27,9 @@ def device_code(config_data):
         data=post_data,
         headers=headers)
 
-    response_body = urlopen(request).read()
+    response = urlopen(request)
+
+    response_body = response.read()
 
     response_data = json.loads(response_body)
 
@@ -58,17 +61,48 @@ def get_token(config_data):
 
     response = urlopen(request)
 
-    print(response)
+    if response.getcode() == 200:
+        print("Success")
+        return json.loads(response.read())
+    elif response.getcode() == 400:
+        sleep(5.0)
+        return device_code(config_data)
+    elif response.getcode() == 404:
+        print("Not Found")
+    elif response.getcode() == 409:
+        print("Already Used")
+    elif response.getcode() == 410:
+        print("Expired")
+    elif response.getcode() == 418:
+        print("Denied")
+    elif response.getcode() == 429:
+        print("Slow Down")
+    return None
 
-    response_body = response.read()
 
-    print(response_body)
-
-    return json.loads(response_body)
-
-
-def checkin(movie, config_data):
-    values = {}
+def checkin(config_data):
+    values = """
+    {
+        "movie": {
+            "title": "Guardians of the Galaxy",
+            "year": 2014,
+            "ids": {
+                "trakt": 28,
+                "slug": "guardians-of-the-galaxy-2014",
+                "imdb": "tt2015381",
+                "tmdb": 118340
+            }
+        },
+        "sharing": {
+            "facebook": false,
+            "twitter": false,
+            "tumblr": false
+        },
+        "message": "Guardians of the Galaxy FTW!",
+        "app_version": "1.0",
+        "app_date": "2014-09-22"
+    }
+    """
 
     headers = {
         "Content-Type": "application/json",
@@ -77,14 +111,28 @@ def checkin(movie, config_data):
         "trakt-api-key": config_data["client_id"]
     }
 
-    print(headers)
-
     request = Request(
         "https://private-anon-e286eacc07-trakt.apiary-mock.com/checkin",
-        data=values,
+        data=(values.encode("utf-8")),
         headers=headers)
 
-    response_body = urlopen(request).read()
+    response = urlopen(request)
+
+    response_body = response.read()
+
+    return response_body
+
+
+def search():
+    headers = {
+        'Content-Type': 'application/json',
+        'trakt-api-version': '2',
+        'trakt-api-key': '[client_id]'
+    }
+
+    request = Request(
+        'https://private-anon-e286eacc07-trakt.apiary-mock.com/search/type',
+        headers=headers)
 
     pass
 
@@ -96,8 +144,7 @@ def main():
     token = get_token(config_data)
     config_data["access_token"] = token["access_token"]
     config_data["refresh_token"] = token["refresh_token"]
-    print(config_data)
-    # checkin(config_data)
+    checkin(config_data)
 
 
 if __name__ == "__main__":
