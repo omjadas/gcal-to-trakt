@@ -1,4 +1,5 @@
 from urllib.request import Request, urlopen
+from urllib.parse import urlencode
 import json
 from time import sleep
 
@@ -15,7 +16,6 @@ def device_code(config_data):
     values = {
         "client_id": config_data["client_id"]
     }
-
     post_data = json.dumps(values).encode("utf-8")
 
     headers = {
@@ -47,7 +47,6 @@ def get_token(config_data):
         "client_id": config_data["client_id"],
         "client_secret": config_data["client_secret"]
     }
-
     post_data = json.dumps(values).encode("utf-8")
 
     headers = {
@@ -81,8 +80,7 @@ def get_token(config_data):
 
 
 def checkin(config_data):
-    values = """
-    {
+    values = {
         "movie": {
             "title": "Guardians of the Galaxy",
             "year": 2014,
@@ -94,15 +92,15 @@ def checkin(config_data):
             }
         },
         "sharing": {
-            "facebook": false,
-            "twitter": false,
-            "tumblr": false
+            "facebook": False,
+            "twitter": False,
+            "tumblr": False
         },
         "message": "Guardians of the Galaxy FTW!",
         "app_version": "1.0",
         "app_date": "2014-09-22"
     }
-    """
+    post_data = json.dumps(values).encode("utf-8")
 
     headers = {
         "Content-Type": "application/json",
@@ -113,14 +111,14 @@ def checkin(config_data):
 
     request = Request(
         "https://private-anon-e286eacc07-trakt.apiary-mock.com/checkin",
-        data=(values.encode("utf-8")),
+        data=post_data,
         headers=headers)
 
     response = urlopen(request)
 
-    response_body = response.read()
+    notify(config_data, "Avengers")
 
-    return response_body
+    return None
 
 
 def search():
@@ -135,6 +133,21 @@ def search():
         headers=headers)
 
     pass
+
+
+def notify(config_data, movie):
+    values = {"value1": movie}
+    post_data = urlencode(values).encode("utf-8")
+
+    request = Request(
+        "https://maker.ifttt.com/trigger/google_cal_trakt_checkin/with/key/{}".format(
+            config_data["ifttt_key"]),
+        data=post_data)
+
+    response = urlopen(request).read()
+
+    print(response)
+    return None
 
 
 def main():
