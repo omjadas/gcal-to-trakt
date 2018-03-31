@@ -121,16 +121,28 @@ def checkin(config_data):
     return None
 
 
-def search():
+def search(config_data, movie):
     headers = {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
-        'trakt-api-key': '[client_id]'
+        'trakt-api-key': config_data["client_id"]
     }
 
+    params = {
+        "query": movie,
+        "fields": "title"
+    }
+
+    params = urlencode(params)
+
     request = Request(
-        'https://private-anon-e286eacc07-trakt.apiary-mock.com/search/type',
+        "https://private-anon-e286eacc07-trakt.apiary-mock.com/search/movie?{}".format(
+            params),
         headers=headers)
+
+    response_body = json.loads(urlopen(request).read())
+
+    print(response_body[0])
 
     pass
 
@@ -144,21 +156,24 @@ def notify(config_data, movie):
             config_data["ifttt_key"]),
         data=post_data)
 
-    response = urlopen(request).read()
+    response = json.loads(urlopen(request).read())
 
-    print(response)
+    print(response[0])
     return None
 
 
-def main():
-    config_data = read_config()
-    code = device_code(config_data)
-    config_data["code"] = code["device_code"]
-    token = get_token(config_data)
-    config_data["access_token"] = token["access_token"]
-    config_data["refresh_token"] = token["refresh_token"]
-    checkin(config_data)
+# def main():
+#     config_data = read_config()
+#     code = device_code(config_data)
+#     config_data["code"] = code["device_code"]
+#     token = get_token(config_data)
+#     config_data["access_token"] = token["access_token"]
+#     config_data["refresh_token"] = token["refresh_token"]
+#     checkin(config_data)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
+
+config_data = read_config()
+search(config_data, "Tomb Raider")
