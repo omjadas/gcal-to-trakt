@@ -42,3 +42,6 @@ def main():
     config_data = read_config()
     device_code(config_data)
 
+
+if __name__ == "__main__":
+    main()
