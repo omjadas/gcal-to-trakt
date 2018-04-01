@@ -1,7 +1,8 @@
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 import json
-from time import sleep
+import datetime
+import pause
 
 
 def read_config():
@@ -69,7 +70,7 @@ def get_token(config_data):
         print("Success")
         return json.loads(response.read())
     elif response.getcode() == 400:
-        sleep(5.0)
+        pause.seconds(5.0)
         return device_code(config_data)
     elif response.getcode() == 404:
         print("Not Found")
