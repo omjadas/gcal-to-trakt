@@ -1,12 +1,13 @@
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
+import urllib.error
 import json
 import datetime
 from time import sleep
 import gcal
 
-# TRAKT_URL = "https://api.trakt.tv"
-TRAKT_URL = "https://private-anon-e286eacc07-trakt.apiary-mock.com"
+TRAKT_URL = "https://api.trakt.tv"
+# TRAKT_URL = "https://private-anon-e286eacc07-trakt.apiary-mock.com"
 
 
 def read_config():
@@ -68,29 +69,39 @@ def get_token(config_data, interval):
         data=post_data,
         headers=headers)
 
-    response = urlopen(request)
+    try:
+        response = urlopen(request)
+        code = response.getcode()
+    except urllib.error.HTTPError as e:
+        code = e.code
 
-    if response.getcode() == 200:
+    if code == 200:
         print("Success")
-        return json.loads(response.read())
-    elif response.getcode() == 400:
+        data = json.loads(response.read())
+        print(data)
+        return data
+    elif code == 400:
         sleep(interval)
         return get_token(config_data, interval)
-    elif response.getcode() == 404:
+    elif code == 404:
         print("Not Found")
-    elif response.getcode() == 409:
+    elif code == 409:
         print("Already Used")
-    elif response.getcode() == 410:
+    elif code == 410:
         print("Expired")
         code = device_code(config_data)
         config_data["device_code"] = code["device_code"]
         return get_token(config_data, code["interval"])
-    elif response.getcode() == 418:
+    elif code == 418:
         print("Denied")
         exit()
-    elif response.getcode() == 429:
+    elif code == 429:
         print("Slow Down")
     return None
+
+
+def refresh_token():
+    pass
 
 
 def checkin(config_data, event):
@@ -150,8 +161,6 @@ def search(config_data, movie):
 
     response_body = json.loads(urlopen(request).read())
 
-    print(response_body[0])
-
     return response_body[0]
 
 
@@ -186,9 +195,15 @@ def main():
         token = get_token(config_data, code["interval"])
         config_data["access_token"] = token["access_token"]
         config_data["refresh_token"] = token["refresh_token"]
+        config_data["token_expiry"] = token["created_at"] + token["expires_in"]
         write_config(config_data)
 
     while True:
+
+        if datetime.datetime.utcnow() >= datetime.datetime.fromtimestamp(
+                config_data["token_expiry"]):
+            pass
+
         print("Checking for event")
         event = gcal.current_event("Movies")
         if event is not None:
