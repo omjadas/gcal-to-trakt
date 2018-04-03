@@ -2,3 +2,5 @@ tempCodeRunnerFile.py
 __pycache__
 config.json
 .vscode
+client_secret.json
+calendar-python-quickstart.json

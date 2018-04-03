@@ -2,7 +2,11 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 import json
 import datetime
-import pause
+from time import sleep
+import gcal
+
+# TRAKT_URL = "https://api.trakt.tv"
+TRAKT_URL = "https://private-anon-e286eacc07-trakt.apiary-mock.com"
 
 
 def read_config():
@@ -14,7 +18,7 @@ def read_config():
 def write_config(config_data):
     with open("config.json", "w") as f:
         json.dump(config_data, f, indent=4)
-    print("Written tokens to disk.")
+    print("Written tokens to disk.\n")
     return None
 
 
@@ -29,7 +33,7 @@ def device_code(config_data):
     }
 
     request = Request(
-        "https://private-anon-e286eacc07-trakt.apiary-mock.com/oauth/device/code",
+        "{}/oauth/device/code".format(TRAKT_URL),
         data=post_data,
         headers=headers)
 
@@ -47,7 +51,7 @@ def device_code(config_data):
     return response_data
 
 
-def get_token(config_data):
+def get_token(config_data, interval):
     values = {
         "code": config_data["device_code"],
         "client_id": config_data["client_id"],
@@ -60,7 +64,7 @@ def get_token(config_data):
     }
 
     request = Request(
-        "https://private-anon-e286eacc07-trakt.apiary-mock.com/oauth/device/token",
+        "{}/oauth/device/token".format(TRAKT_URL),
         data=post_data,
         headers=headers)
 
@@ -70,41 +74,40 @@ def get_token(config_data):
         print("Success")
         return json.loads(response.read())
     elif response.getcode() == 400:
-        pause.seconds(5.0)
-        return device_code(config_data)
+        sleep(interval)
+        return get_token(config_data, interval)
     elif response.getcode() == 404:
         print("Not Found")
     elif response.getcode() == 409:
         print("Already Used")
     elif response.getcode() == 410:
         print("Expired")
+        code = device_code(config_data)
+        config_data["device_code"] = code["device_code"]
+        return get_token(config_data, code["interval"])
     elif response.getcode() == 418:
         print("Denied")
+        exit()
     elif response.getcode() == 429:
         print("Slow Down")
     return None
 
 
-def checkin(config_data):
+def checkin(config_data, event):
+    event = gcal.current_event("Movies")
+
+    movie = search(config_data, event[0])["movie"]
+
     values = {
-        "movie": {
-            "title": "Guardians of the Galaxy",
-            "year": 2014,
-            "ids": {
-                "trakt": 28,
-                "slug": "guardians-of-the-galaxy-2014",
-                "imdb": "tt2015381",
-                "tmdb": 118340
-            }
-        },
+        "movie": movie,
         "sharing": {
             "facebook": False,
             "twitter": False,
             "tumblr": False
         },
-        "message": "Guardians of the Galaxy FTW!",
+        "message": "",
         "app_version": "1.0",
-        "app_date": "2014-09-22"
+        "app_date": "2018-04-03"
     }
     post_data = json.dumps(values).encode("utf-8")
 
@@ -116,13 +119,13 @@ def checkin(config_data):
     }
 
     request = Request(
-        "https://private-anon-e286eacc07-trakt.apiary-mock.com/checkin",
+        "{}/checkin".format(TRAKT_URL),
         data=post_data,
         headers=headers)
 
     response = urlopen(request)
 
-    notify(config_data, "Avengers")
+    notify(config_data, movie["title"])
 
     return None
 
@@ -142,15 +145,14 @@ def search(config_data, movie):
     params = urlencode(params)
 
     request = Request(
-        "https://private-anon-e286eacc07-trakt.apiary-mock.com/search/movie?{}".format(
-            params),
+        "{}/search/movie?{}".format(TRAKT_URL, params),
         headers=headers)
 
     response_body = json.loads(urlopen(request).read())
 
     print(response_body[0])
 
-    pass
+    return response_body[0]
 
 
 def notify(config_data, movie):
@@ -168,16 +170,35 @@ def notify(config_data, movie):
     return None
 
 
+def sleep_until(dt):
+    sleep_seconds = (dt - datetime.datetime.utcnow()).seconds
+    print("Sleeping for {:.2f} minutes".format(sleep_seconds / 60))
+    sleep((dt - datetime.datetime.utcnow()).seconds)
+    return None
+
+
 def main():
     config_data = read_config()
-    code = device_code(config_data)
-    config_data["device_code"] = code["device_code"]
-    token = get_token(config_data)
-    config_data["access_token"] = token["access_token"]
-    config_data["refresh_token"] = token["refresh_token"]
-    write_config(config_data)
+    if "device_code" not in config_data:
+        code = device_code(config_data)
+        config_data["device_code"] = code["device_code"]
+    if "access_token" not in config_data:
+        token = get_token(config_data, code["interval"])
+        config_data["access_token"] = token["access_token"]
+        config_data["refresh_token"] = token["refresh_token"]
+        write_config(config_data)
 
-    checkin(config_data)
+    while True:
+        print("Checking for event")
+        event = gcal.current_event("Movies")
+        if event is not None:
+            checkin(config_data, event)
+            sleep_until(event[-1])
+            print("Finished sleeping\n")
+            continue
+        print("No event found")
+        print("Sleeping for 5 minutes")
+        sleep(300)
 
 
 if __name__ == "__main__":

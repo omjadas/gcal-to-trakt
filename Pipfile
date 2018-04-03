@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 google-api-python-client = "*"
-pause = "*"
 
 [dev-packages]
 "autopep8" = "*"
