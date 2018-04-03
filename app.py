@@ -5,6 +5,7 @@ import json
 import datetime
 from time import sleep
 import gcal
+from copy import deepcopy
 
 TRAKT_URL = "https://api.trakt.tv"
 # TRAKT_URL = "https://private-anon-e286eacc07-trakt.apiary-mock.com"
@@ -100,8 +101,10 @@ def get_token(config_data, interval):
     return None
 
 
-def refresh_token():
-    pass
+def refresh_token(config_data):
+    my_data = deepcopy(config_data)
+    my_data["device_code"] = my_data["refresh_token"]
+    return(get_token(my_data, 5))
 
 
 def checkin(config_data, event):
@@ -199,10 +202,13 @@ def main():
         write_config(config_data)
 
     while True:
-
         if datetime.datetime.utcnow() >= datetime.datetime.fromtimestamp(
                 config_data["token_expiry"]):
-            pass
+            token = refresh_token(config_data)
+            config_data["access_token"] = token["access_token"]
+            config_data["refresh_token"] = token["refresh_token"]
+            config_data["token_expiry"] = (
+                token["created_at"] + token["expires_in"])
 
         print("Checking for event")
         event = gcal.current_event("Movies")
