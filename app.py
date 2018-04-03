@@ -53,22 +53,30 @@ def device_code(config_data):
     return response_data
 
 
-def get_token(config_data, interval):
-    values = {
-        "code": config_data["device_code"],
-        "client_id": config_data["client_id"],
-        "client_secret": config_data["client_secret"]
-    }
+def get_token(config_data, interval, refresh=False):
+    if not refresh:
+        values = {
+            "code": config_data["device_code"],
+            "client_id": config_data["client_id"],
+            "client_secret": config_data["client_secret"]
+        }
+        url = "{}/oauth/device/token"
+    else:
+        values = {
+            "refresh_token": config_data["refresh_token"],
+            "client_id": config_data["client_id"],
+            "client_secret": config_data["client_secret"],
+            "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
+            "grant_type": "refresh_token"
+        }
+        url = "{}/oauth/token"
     post_data = json.dumps(values).encode("utf-8")
 
     headers = {
         "Content-Type": "application/json"
     }
 
-    request = Request(
-        "{}/oauth/device/token".format(TRAKT_URL),
-        data=post_data,
-        headers=headers)
+    request = Request(url.format(TRAKT_URL), data=post_data,headers=headers)
 
     try:
         response = urlopen(request)
@@ -79,15 +87,16 @@ def get_token(config_data, interval):
     if code == 200:
         print("Success")
         data = json.loads(response.read())
-        print(data)
         return data
     elif code == 400:
         sleep(interval)
         return get_token(config_data, interval)
     elif code == 404:
         print("Not Found")
+        exit()
     elif code == 409:
         print("Already Used")
+        exit()
     elif code == 410:
         print("Expired")
         code = device_code(config_data)
@@ -102,9 +111,7 @@ def get_token(config_data, interval):
 
 
 def refresh_token(config_data):
-    my_data = deepcopy(config_data)
-    my_data["device_code"] = my_data["refresh_token"]
-    return(get_token(my_data, 5))
+    return get_token(config_data, 5, True)
 
 
 def checkin(config_data, event):
@@ -127,7 +134,7 @@ def checkin(config_data, event):
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": config_data["access_token"],
+        "Authorization": "Bearer {}".format(config_data["access_token"]),
         "trakt-api-version": "2",
         "trakt-api-key": config_data["client_id"]
     }
@@ -202,13 +209,15 @@ def main():
         write_config(config_data)
 
     while True:
-        if datetime.datetime.utcnow() >= datetime.datetime.fromtimestamp(
+        if datetime.datetime.utcnow() >= datetime.datetime.utcfromtimestamp(
                 config_data["token_expiry"]):
-            token = refresh_token(config_data)
-            config_data["access_token"] = token["access_token"]
-            config_data["refresh_token"] = token["refresh_token"]
+            print("Acces tokens expired, refreshing")
+            new_tokens = refresh_token(config_data)
+            config_data["access_token"] = new_tokens["access_token"]
+            config_data["refresh_token"] = new_tokens["refresh_token"]
             config_data["token_expiry"] = (
-                token["created_at"] + token["expires_in"])
+                new_tokens["created_at"] + new_tokens["expires_in"])
+            write_config(config_data)
 
         print("Checking for event")
         event = gcal.current_event("Movies")
