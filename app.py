@@ -227,8 +227,8 @@ def main():
             print("Finished sleeping\n")
             continue
         print("No event found")
-        print("Sleeping for 5 minutes")
-        sleep(300)
+        print("Sleeping for 1 minute")
+        sleep(60)
 
 
 if __name__ == "__main__":
