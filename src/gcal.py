@@ -3,17 +3,16 @@ import os
 from typing import Tuple, Union
 
 from dotenv import load_dotenv
-
 from google_calendar_api.client import GoogleCalendarClient
 
 load_dotenv()
 
-CALENDAR_ID = os.environ.get("CALENDAR_ID")
-CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+CALENDAR_ID = os.environ["CALENDAR_ID"]
+GCAL_CLIENT_SECRET = os.environ["GCAL_CLIENT_SECRET"]
 CLIENT_SECRET_LOCATION = "client_secret.json"
 
 with open(CLIENT_SECRET_LOCATION, "w") as client_secret_file:
-    client_secret_file.write(CLIENT_SECRET)
+    client_secret_file.write(GCAL_CLIENT_SECRET)
 
 CLIENT = GoogleCalendarClient(
     calendar_id=CALENDAR_ID,

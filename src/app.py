@@ -1,43 +1,39 @@
 import datetime
+from datetime import date
 import json
 import os
 from time import sleep
-from typing import Any, Dict, Union
+from typing import Any, Dict
 import urllib.error
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 import redis
-import requests
-from datetime import date
 
 import gcal
 load_dotenv()
 
 CONFIG_FILE = "config.json"
 
-TRAKT_URL = os.environ.get("TRAKT_URL")
-REDIS_URL = os.environ.get("REDIS_URL")
+CLIENT_ID = os.environ["CLIENT_ID"]
+TRAKT_CLIENT_SECRET = os.environ["TRAKT_CLIENT_SECRET"]
+IFTTT_KEY = os.environ["IFTTT_KEY"]
+TRAKT_URL = os.environ["TRAKT_URL"]
+REDIS_URL = os.environ["REDIS_URL"]
 
 R = redis.from_url(REDIS_URL)
 
-def read_config() -> Dict[str, Any]:
-    with open(CONFIG_FILE) as f:
-        config_data = json.loads(f.read())
-    return config_data
+DEVICE_CODE = R.get("DEVICE_CODE").decode("utf-8") if R.get("DEVICE_CODE") is not None else None
+ACCESS_TOKEN = R.get("ACCESS_TOKEN").decode("utf-8") if R.get("ACCESS_TOKEN") is not None else None
+REFRESH_TOKEN = R.get("REFRESH_TOKEN").decode("utf-8") if R.get("REFRESH_TOKEN") is not None else None
+TOKEN_EXPIRY = R.get("TOKEN_EXPIRY").decode("utf-8") if R.get("TOKEN_EXPIRY") is not None else None
 
 
-def write_config(config_data: Dict[str, Any]) -> None:
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config_data, f, indent=4)
-    print("Written tokens to disk.\n")
-    return None
-
-
-def device_code(config_data: Dict[str, Any]) -> Dict[str, Any]:
+def device_code() -> Dict[str, Any]:
+    global CLIENT_ID
     values = {
-        "client_id": config_data["client_id"]
+        "client_id": CLIENT_ID
     }
     post_data = json.dumps(values).encode("utf-8")
 
@@ -64,24 +60,25 @@ def device_code(config_data: Dict[str, Any]) -> Dict[str, Any]:
     return response_data
 
 
-def get_token(config_data: Dict[str, str],
-              interval: float, refresh: bool = False):
+def get_token(interval: float, refresh: bool = False):
+    global DEVICE_CODE, CLIENT_ID, TRAKT_CLIENT_SECRET, REFRESH_TOKEN
+
     if not refresh:
         values = {
-            "code": config_data["device_code"],
-            "client_id": config_data["client_id"],
-            "client_secret": config_data["client_secret"]
+            "code": DEVICE_CODE,
+            "client_id": CLIENT_ID,
+            "client_secret": TRAKT_CLIENT_SECRET
         }
         url = "{}/oauth/device/token"
     else:
         values = {
-            "refresh_token": config_data["refresh_token"],
-            "client_id": config_data["client_id"],
-            "client_secret": config_data["client_secret"],
+            "refresh_token": REFRESH_TOKEN,
+            "client_id": CLIENT_ID,
+            "client_secret": TRAKT_CLIENT_SECRET,
             "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
             "grant_type": "refresh_token"
         }
-        url = "{}/oauth/token"
+        url = "{}/oauth/token"        
     post_data = json.dumps(values).encode("utf-8")
 
     headers = {
@@ -102,7 +99,7 @@ def get_token(config_data: Dict[str, str],
         return data
     elif code == 400:
         sleep(interval)
-        return get_token(config_data, interval)
+        return get_token(interval)
     elif code == 404:
         print("Not Found")
         exit()
@@ -111,9 +108,9 @@ def get_token(config_data: Dict[str, str],
         exit()
     elif code == 410:
         print("Expired")
-        code = device_code(config_data)
-        config_data["device_code"] = code["device_code"]
-        return get_token(config_data, code["interval"])
+        code = device_code()
+        DEVICE_CODE = code["device_code"]
+        return get_token(code["interval"])
     elif code == 418:
         print("Denied")
         exit()
@@ -122,14 +119,16 @@ def get_token(config_data: Dict[str, str],
     return None
 
 
-def refresh_token(config_data):
-    return get_token(config_data, 5, True)
+def refresh_token():
+    return get_token(5, True)
 
 
-def checkin(config_data, event):
-    event = gcal.current_event("Movies")
+def checkin(event):
+    global ACCESS_TOKEN, CLIENT_ID
+    
+    event = gcal.current_event()
 
-    movie = search(config_data, event[0])["movie"]
+    movie = search(event[0])["movie"]
 
     values = {
         "movie": movie,
@@ -146,9 +145,9 @@ def checkin(config_data, event):
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer {}".format(config_data["access_token"]),
+        "Authorization": "Bearer {}".format(ACCESS_TOKEN),
         "trakt-api-version": "2",
-        "trakt-api-key": config_data["client_id"]
+        "trakt-api-key": CLIENT_ID
     }
 
     request = Request(
@@ -158,16 +157,17 @@ def checkin(config_data, event):
 
     response = urlopen(request)
 
-    notify(config_data, movie["title"])
+    notify(movie["title"])
 
     return None
 
 
-def search(config_data, movie):
+def search(movie):
+    global CLIENT_ID
     headers = {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
-        'trakt-api-key': config_data["client_id"]
+        'trakt-api-key': CLIENT_ID
     }
 
     params = {
@@ -186,19 +186,18 @@ def search(config_data, movie):
     return response_body[0]
 
 
-def notify(config_data, movie):
+def notify(movie: str) -> None:
     values = {"value1": movie}
     post_data = urlencode(values).encode("utf-8")
 
     request = Request(
         "https://maker.ifttt.com/trigger/google_cal_trakt_checkin/with/key/{}".format(
-            config_data["ifttt_key"]),
+            IFTTT_KEY),
         data=post_data)
 
     urlopen(request)
 
     print("Checked into {}".format(movie))
-    return None
 
 
 def sleep_until(dt: datetime.datetime) -> None:
@@ -208,32 +207,33 @@ def sleep_until(dt: datetime.datetime) -> None:
 
 
 def main() -> None:
-    config_data = read_config()
-    if "device_code" not in config_data:
-        code = device_code(config_data)
-        config_data["device_code"] = code["device_code"]
-    if "access_token" not in config_data:
-        token = get_token(config_data, code["interval"])
-        config_data["access_token"] = token["access_token"]
-        config_data["refresh_token"] = token["refresh_token"]
-        config_data["token_expiry"] = token["created_at"] + token["expires_in"]
-        write_config(config_data)
+    global DEVICE_CODE, ACCESS_TOKEN, REFRESH_TOKEN, TOKEN_EXPIRY
+    interval = 1
+    if DEVICE_CODE is None:
+        code = device_code()
+        interval = code["interval"]
+        DEVICE_CODE = code["device_code"]
+        R.set("DEVICE_CODE", DEVICE_CODE)
+    if ACCESS_TOKEN is None:
+        token = get_token(interval)
+        ACCESS_TOKEN = token["access_token"]
+        REFRESH_TOKEN = token["refresh_token"]
+        TOKEN_EXPIRY = token["created_at"] + token["expires_in"]
 
     while True:
         if datetime.datetime.utcnow() >= datetime.datetime.utcfromtimestamp(
-                config_data["token_expiry"]):
+                TOKEN_EXPIRY):
             print("Access tokens expired, refreshing")
-            new_tokens = refresh_token(config_data)
-            config_data["access_token"] = new_tokens["access_token"]
-            config_data["refresh_token"] = new_tokens["refresh_token"]
-            config_data["token_expiry"] = (
+            new_tokens = refresh_token()
+            ACCESS_TOKEN = new_tokens["access_token"]
+            REFRESH_TOKEN = new_tokens["refresh_token"]
+            TOKEN_EXPIRY = (
                 new_tokens["created_at"] + new_tokens["expires_in"])
-            write_config(config_data)
 
         print("Checking for event")
-        event = gcal.current_event("Movies")
+        event = gcal.current_event()
         if event is not None:
-            checkin(config_data, event)
+            checkin(event)
             sleep_until(event[-1])
             print("Finished sleeping\n")
             continue
