@@ -1,30 +1,41 @@
-from urllib.request import Request, urlopen
-from urllib.parse import urlencode
-import urllib.error
-import json
 import datetime
+import json
+import os
 from time import sleep
+from typing import Any, Dict, Union
+import urllib.error
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+from dotenv import load_dotenv
+import redis
+import requests
+from datetime import date
+
 import gcal
-from copy import deepcopy
+load_dotenv()
 
-TRAKT_URL = "https://api.trakt.tv"
-# TRAKT_URL = "https://private-anon-e286eacc07-trakt.apiary-mock.com"
+CONFIG_FILE = "config.json"
 
+TRAKT_URL = os.environ.get("TRAKT_URL")
+REDIS_URL = os.environ.get("REDIS_URL")
 
-def read_config():
-    with open("config.json") as f:
+R = redis.from_url(REDIS_URL)
+
+def read_config() -> Dict[str, Any]:
+    with open(CONFIG_FILE) as f:
         config_data = json.loads(f.read())
     return config_data
 
 
-def write_config(config_data):
-    with open("config.json", "w") as f:
+def write_config(config_data: Dict[str, Any]) -> None:
+    with open(CONFIG_FILE, "w") as f:
         json.dump(config_data, f, indent=4)
     print("Written tokens to disk.\n")
     return None
 
 
-def device_code(config_data):
+def device_code(config_data: Dict[str, Any]) -> Dict[str, Any]:
     values = {
         "client_id": config_data["client_id"]
     }
@@ -53,7 +64,8 @@ def device_code(config_data):
     return response_data
 
 
-def get_token(config_data, interval, refresh=False):
+def get_token(config_data: Dict[str, str],
+              interval: float, refresh: bool = False):
     if not refresh:
         values = {
             "code": config_data["device_code"],
@@ -76,13 +88,13 @@ def get_token(config_data, interval, refresh=False):
         "Content-Type": "application/json"
     }
 
-    request = Request(url.format(TRAKT_URL), data=post_data,headers=headers)
+    request = Request(url.format(TRAKT_URL), data=post_data, headers=headers)
 
     try:
         response = urlopen(request)
         code = response.getcode()
-    except urllib.error.HTTPError as e:
-        code = e.code
+    except urllib.error.HTTPError as err:
+        code = err.code
 
     if code == 200:
         print("Success")
@@ -189,14 +201,13 @@ def notify(config_data, movie):
     return None
 
 
-def sleep_until(dt):
+def sleep_until(dt: datetime.datetime) -> None:
     sleep_seconds = (dt - datetime.datetime.utcnow()).seconds
     print("Sleeping for {:.2f} minutes".format(sleep_seconds / 60))
     sleep((dt - datetime.datetime.utcnow()).seconds)
-    return None
 
 
-def main():
+def main() -> None:
     config_data = read_config()
     if "device_code" not in config_data:
         code = device_code(config_data)
@@ -211,7 +222,7 @@ def main():
     while True:
         if datetime.datetime.utcnow() >= datetime.datetime.utcfromtimestamp(
                 config_data["token_expiry"]):
-            print("Acces tokens expired, refreshing")
+            print("Access tokens expired, refreshing")
             new_tokens = refresh_token(config_data)
             config_data["access_token"] = new_tokens["access_token"]
             config_data["refresh_token"] = new_tokens["refresh_token"]
