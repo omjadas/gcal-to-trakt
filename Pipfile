@@ -4,13 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-api-python-client = "*"
-"oauth2client" = "*"
+google-calendar-api-client-python = "*"
+python-dotenv = "*"
+redis = "*"
+requests = "*"
 
 [dev-packages]
-"autopep8" = "*"
-rope = "*"
+autopep8 = "*"
 pylint = "*"
+rope = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
