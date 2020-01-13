@@ -30,9 +30,10 @@ REFRESH_TOKEN = "REFRESH_TOKEN"
 TOKEN_EXPIRY = "TOKEN_EXPIRY"
 
 
-def redis_string(key: str) -> Optional[str]:
-    b = R.get(key)
-    return b.decode("utf-8") if b is not None else None
+def redis_string(key: str, default: None = None) -> Optional[str]:
+    """Get a value from redis and decode it to a string"""
+    byt = R.get(key)
+    return byt.decode("utf-8") if byt is not None else default
 
 
 def device_code() -> Dict[str, Any]:
@@ -107,17 +108,15 @@ def get_token(interval: float, refresh: bool = False):
         exit()
     elif code == 429:
         print("Slow Down")
-    return None
 
 
 def refresh_token():
     return get_token(5, True)
 
 
-def checkin(event):
-    event = gcal.current_event()
-
-    movie = search(event[0])["movie"]
+def checkin(event: str) -> None:
+    """Checkin to the movie specified by event on Trakt.tv"""
+    movie = search(event)["movie"]
 
     payload = {
         "movie": movie,
@@ -128,7 +127,7 @@ def checkin(event):
         },
         "message": "",
         "app_version": "1.0",
-        "app_date": "2018-04-03"
+        "app_date": "2020-01-13"
     }
 
     headers = {
@@ -144,10 +143,9 @@ def checkin(event):
 
     notify(movie["title"])
 
-    return None
 
-
-def search(movie):
+def search(movie: str) -> Dict[str, Any]:
+    """Search for a movie on Trakt.tv"""
     headers = {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
@@ -170,24 +168,29 @@ def search(movie):
 
 
 def notify(movie: str) -> None:
+    """Notify IFTTT about a checkin"""
     payload = {"value1": movie}
-    post_data = urlencode(payload).encode("utf-8")
 
     res = requests.get("https://maker.ifttt.com/trigger/{}/with/key/{}".format(
-                           IFTTT_EVENT,
-                           IFTTT_KEY),
+        IFTTT_EVENT,
+        IFTTT_KEY),
                        data=json.dumps(payload))
 
-    print("Checked into {}".format(movie))
+    if res.status_code == 200:
+        print("Checked in to {}".format(movie))
+    else:
+        print("Failed to notify\nStatus code: {}".format(res.status_code))
 
 
 def sleep_until(dt: datetime.datetime) -> None:
+    """Sleep until the time specified by dt"""
     sleep_seconds = (dt - datetime.datetime.utcnow()).seconds
     print("Sleeping for {:.2f} minutes".format(sleep_seconds / 60))
     sleep((dt - datetime.datetime.utcnow()).seconds)
 
 
 def main() -> None:
+    """Main function"""
     interval = 1
     if redis_string(DEVICE_CODE) is None:
         code = device_code()
@@ -212,7 +215,8 @@ def main() -> None:
         print("Checking for event")
         event = gcal.current_event()
         if event is not None:
-            checkin(event)
+            if event[0] is not None:
+                checkin(event[0])
             sleep_until(event[-1])
             print("Finished sleeping\n")
             continue
