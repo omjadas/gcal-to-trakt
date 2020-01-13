@@ -1,5 +1,4 @@
 import datetime
-from datetime import date
 import json
 import os
 from time import sleep
@@ -12,6 +11,7 @@ from dotenv import load_dotenv
 import redis
 
 import gcal
+
 load_dotenv()
 
 CONFIG_FILE = "config.json"
@@ -111,7 +111,7 @@ def get_token(interval: float, refresh: bool = False):
     elif code == 410:
         print("Expired")
         code = device_code()
-        DEVICE_CODE = code["device_code"]
+        R.set(DEVICE_CODE, code["device_code"])
         return get_token(code["interval"])
     elif code == 418:
         print("Denied")
@@ -126,8 +126,6 @@ def refresh_token():
 
 
 def checkin(event):
-    global ACCESS_TOKEN, CLIENT_ID
-    
     event = gcal.current_event()
 
     movie = search(event[0])["movie"]
@@ -165,7 +163,6 @@ def checkin(event):
 
 
 def search(movie):
-    global CLIENT_ID
     headers = {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
