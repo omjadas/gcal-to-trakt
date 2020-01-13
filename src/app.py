@@ -43,7 +43,9 @@ def device_code() -> Dict[str, Any]:
         "Content-Type": "application/json"
     }
 
-    res = requests.post("{}/oauth/device/code".format(TRAKT_URL), data=json.dumps(payload), headers=headers)
+    res = requests.post("{}/oauth/device/code".format(TRAKT_URL),
+                        data=json.dumps(payload),
+                        headers=headers)
 
     response_data = json.loads(res.text)
 
@@ -77,7 +79,9 @@ def get_token(interval: float, refresh: bool = False):
         "Content-Type": "application/json"
     }
 
-    res = requests.post(url.format(TRAKT_URL), data=json.dumps(payload), headers=headers)
+    res = requests.post(url.format(TRAKT_URL),
+                        data=json.dumps(payload),
+                        headers=headers)
     code = res.status_code
 
     if code == 200:
@@ -133,7 +137,9 @@ def checkin(event):
         "trakt-api-key": CLIENT_ID
     }
 
-    requests.post("{}/checkin".format(TRAKT_URL), data=json.dumps(payload), headers=headers)
+    requests.post("{}/checkin".format(TRAKT_URL),
+                  data=json.dumps(payload),
+                  headers=headers)
 
     notify(movie["title"])
 
@@ -198,7 +204,8 @@ def main() -> None:
             new_tokens = refresh_token()
             R.set(ACCESS_TOKEN, new_tokens["access_token"])
             R.set(REFRESH_TOKEN, new_tokens["refresh_token"])
-            R.set(TOKEN_EXPIRY, new_tokens["created_at"] + new_tokens["expires_in"])
+            R.set(TOKEN_EXPIRY,
+                  new_tokens["created_at"] + new_tokens["expires_in"])
 
         print("Checking for event")
         event = gcal.current_event()
