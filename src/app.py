@@ -3,12 +3,11 @@ import json
 import os
 from time import sleep
 from typing import Any, Dict, Optional
-import urllib.error
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 import redis
+import requests
 
 import gcal
 
@@ -31,30 +30,22 @@ TOKEN_EXPIRY = "TOKEN_EXPIRY"
 
 
 def redis_string(key: str) -> Optional[str]:
-    b: str = R.get(key).decode("utf-8")
-    return b if b is not None else None
+    b = R.get(key)
+    return b.decode("utf-8") if b is not None else None
 
 
 def device_code() -> Dict[str, Any]:
-    values = {
+    payload = {
         "client_id": CLIENT_ID
     }
-    post_data = json.dumps(values).encode("utf-8")
 
     headers = {
         "Content-Type": "application/json"
     }
 
-    request = Request(
-        "{}/oauth/device/code".format(TRAKT_URL),
-        data=post_data,
-        headers=headers)
+    res = requests.post("{}/oauth/device/code".format(TRAKT_URL), data=json.dumps(payload), headers=headers)
 
-    response = urlopen(request)
-
-    response_body = response.read()
-
-    response_data = json.loads(response_body)
+    response_data = json.loads(res.text)
 
     print(
         "Enter {} at {}".format(
@@ -66,39 +57,32 @@ def device_code() -> Dict[str, Any]:
 
 def get_token(interval: float, refresh: bool = False):
     if not refresh:
-        values = {
+        payload = {
             "code": redis_string(DEVICE_CODE),
             "client_id": CLIENT_ID,
             "client_secret": TRAKT_CLIENT_SECRET
         }
         url = "{}/oauth/device/token"
     else:
-        values = {
+        payload = {
             "refresh_token": redis_string(REFRESH_TOKEN),
             "client_id": CLIENT_ID,
             "client_secret": TRAKT_CLIENT_SECRET,
             "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
             "grant_type": "refresh_token"
         }
-        url = "{}/oauth/token"        
-    post_data = json.dumps(values).encode("utf-8")
+        url = "{}/oauth/token"
 
     headers = {
         "Content-Type": "application/json"
     }
 
-    request = Request(url.format(TRAKT_URL), data=post_data, headers=headers)
-
-    try:
-        response = urlopen(request)
-        code = response.getcode()
-    except urllib.error.HTTPError as err:
-        code = err.code
+    res = requests.post(url.format(TRAKT_URL), data=json.dumps(payload), headers=headers)
+    code = res.status_code
 
     if code == 200:
         print("Success")
-        data = json.loads(response.read())
-        return data
+        return json.loads(res.text)
     elif code == 400:
         sleep(interval)
         return get_token(interval)
@@ -130,7 +114,7 @@ def checkin(event):
 
     movie = search(event[0])["movie"]
 
-    values = {
+    payload = {
         "movie": movie,
         "sharing": {
             "facebook": False,
@@ -141,7 +125,6 @@ def checkin(event):
         "app_version": "1.0",
         "app_date": "2018-04-03"
     }
-    post_data = json.dumps(values).encode("utf-8")
 
     headers = {
         "Content-Type": "application/json",
@@ -150,12 +133,7 @@ def checkin(event):
         "trakt-api-key": CLIENT_ID
     }
 
-    request = Request(
-        "{}/checkin".format(TRAKT_URL),
-        data=post_data,
-        headers=headers)
-
-    response = urlopen(request)
+    requests.post("{}/checkin".format(TRAKT_URL), data=json.dumps(payload), headers=headers)
 
     notify(movie["title"])
 
@@ -176,25 +154,21 @@ def search(movie):
 
     params = urlencode(params)
 
-    request = Request(
-        "{}/search/movie?{}".format(TRAKT_URL, params),
-        headers=headers)
+    res = requests.get("{}/search/movie?{}".format(TRAKT_URL, params),
+                       headers=headers)
 
-    response_body = json.loads(urlopen(request).read())
+    response_body = json.loads(res.text)
 
     return response_body[0]
 
 
 def notify(movie: str) -> None:
-    values = {"value1": movie}
-    post_data = urlencode(values).encode("utf-8")
+    payload = {"value1": movie}
+    post_data = urlencode(payload).encode("utf-8")
 
-    request = Request(
-        "https://maker.ifttt.com/trigger/google_cal_trakt_checkin/with/key/{}".format(
-            IFTTT_KEY),
-        data=post_data)
-
-    urlopen(request)
+    res = requests.get("https://maker.ifttt.com/trigger/google_cal_trakt_checkin/with/key/{}".format(
+                           IFTTT_KEY),
+                       data=json.dumps(payload))
 
     print("Checked into {}".format(movie))
 
