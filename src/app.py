@@ -18,6 +18,7 @@ CONFIG_FILE = "config.json"
 CLIENT_ID = os.environ["CLIENT_ID"]
 TRAKT_CLIENT_SECRET = os.environ["TRAKT_CLIENT_SECRET"]
 IFTTT_KEY = os.environ["IFTTT_KEY"]
+IFTTT_EVENT = os.environ["IFTTT_EVENT"]
 TRAKT_URL = os.environ["TRAKT_URL"]
 REDIS_URL = os.environ["REDIS_URL"]
 
@@ -172,7 +173,8 @@ def notify(movie: str) -> None:
     payload = {"value1": movie}
     post_data = urlencode(payload).encode("utf-8")
 
-    res = requests.get("https://maker.ifttt.com/trigger/google_cal_trakt_checkin/with/key/{}".format(
+    res = requests.get("https://maker.ifttt.com/trigger/{}/with/key/{}".format(
+                           IFTTT_EVENT,
                            IFTTT_KEY),
                        data=json.dumps(payload))
 
