@@ -3,7 +3,7 @@ from datetime import date
 import json
 import os
 from time import sleep
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import urllib.error
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -24,14 +24,18 @@ REDIS_URL = os.environ["REDIS_URL"]
 
 R = redis.from_url(REDIS_URL)
 
-DEVICE_CODE = R.get("DEVICE_CODE").decode("utf-8") if R.get("DEVICE_CODE") is not None else None
-ACCESS_TOKEN = R.get("ACCESS_TOKEN").decode("utf-8") if R.get("ACCESS_TOKEN") is not None else None
-REFRESH_TOKEN = R.get("REFRESH_TOKEN").decode("utf-8") if R.get("REFRESH_TOKEN") is not None else None
-TOKEN_EXPIRY = R.get("TOKEN_EXPIRY").decode("utf-8") if R.get("TOKEN_EXPIRY") is not None else None
+DEVICE_CODE = "DEVICE_CODE"
+ACCESS_TOKEN = "ACCESS_TOKEN"
+REFRESH_TOKEN = "REFRESH_TOKEN"
+TOKEN_EXPIRY = "TOKEN_EXPIRY"
+
+
+def redis_string(key: str) -> Optional[str]:
+    b: str = R.get(key).decode("utf-8")
+    return b if b is not None else None
 
 
 def device_code() -> Dict[str, Any]:
-    global CLIENT_ID
     values = {
         "client_id": CLIENT_ID
     }
@@ -61,18 +65,16 @@ def device_code() -> Dict[str, Any]:
 
 
 def get_token(interval: float, refresh: bool = False):
-    global DEVICE_CODE, CLIENT_ID, TRAKT_CLIENT_SECRET, REFRESH_TOKEN
-
     if not refresh:
         values = {
-            "code": DEVICE_CODE,
+            "code": redis_string(DEVICE_CODE),
             "client_id": CLIENT_ID,
             "client_secret": TRAKT_CLIENT_SECRET
         }
         url = "{}/oauth/device/token"
     else:
         values = {
-            "refresh_token": REFRESH_TOKEN,
+            "refresh_token": redis_string(REFRESH_TOKEN),
             "client_id": CLIENT_ID,
             "client_secret": TRAKT_CLIENT_SECRET,
             "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
@@ -145,7 +147,7 @@ def checkin(event):
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer {}".format(ACCESS_TOKEN),
+        "Authorization": "Bearer {}".format(redis_string(ACCESS_TOKEN)),
         "trakt-api-version": "2",
         "trakt-api-key": CLIENT_ID
     }
@@ -207,28 +209,25 @@ def sleep_until(dt: datetime.datetime) -> None:
 
 
 def main() -> None:
-    global DEVICE_CODE, ACCESS_TOKEN, REFRESH_TOKEN, TOKEN_EXPIRY
     interval = 1
-    if DEVICE_CODE is None:
+    if redis_string(DEVICE_CODE) is None:
         code = device_code()
         interval = code["interval"]
-        DEVICE_CODE = code["device_code"]
-        R.set("DEVICE_CODE", DEVICE_CODE)
-    if ACCESS_TOKEN is None:
+        R.set(DEVICE_CODE, code["device_code"])
+    if redis_string(ACCESS_TOKEN) is None:
         token = get_token(interval)
-        ACCESS_TOKEN = token["access_token"]
-        REFRESH_TOKEN = token["refresh_token"]
-        TOKEN_EXPIRY = token["created_at"] + token["expires_in"]
+        R.set(ACCESS_TOKEN, token["access_token"])
+        R.set(REFRESH_TOKEN, token["refresh_token"])
+        R.set(TOKEN_EXPIRY, token["created_at"] + token["expires_in"])
 
     while True:
         if datetime.datetime.utcnow() >= datetime.datetime.utcfromtimestamp(
-                TOKEN_EXPIRY):
+                float(redis_string(TOKEN_EXPIRY))):
             print("Access tokens expired, refreshing")
             new_tokens = refresh_token()
-            ACCESS_TOKEN = new_tokens["access_token"]
-            REFRESH_TOKEN = new_tokens["refresh_token"]
-            TOKEN_EXPIRY = (
-                new_tokens["created_at"] + new_tokens["expires_in"])
+            R.set(ACCESS_TOKEN, new_tokens["access_token"])
+            R.set(REFRESH_TOKEN, new_tokens["refresh_token"])
+            R.set(TOKEN_EXPIRY, new_tokens["created_at"] + new_tokens["expires_in"])
 
         print("Checking for event")
         event = gcal.current_event()

@@ -1,6 +1,6 @@
 import datetime
 import os
-from typing import Tuple, Union
+from typing import Optional, Tuple
 
 from dotenv import load_dotenv
 from google_calendar_api.client import GoogleCalendarClient
@@ -21,10 +21,9 @@ CLIENT = GoogleCalendarClient(
 os.remove(CLIENT_SECRET_LOCATION)
 
 
-def current_event() -> Union[None,
-                             Tuple[Union[str, None],
-                                   Union[str, None],
-                                   datetime.datetime]]:
+def current_event() -> Optional[Tuple[Optional[str],
+                                      Optional[str],
+                                      datetime.datetime]]:
     """Finds the current event in the calendar with the summary cal_summary"""
     events = CLIENT.get_events()
     current = datetime.datetime.utcnow()
