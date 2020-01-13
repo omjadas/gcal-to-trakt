@@ -51,10 +51,8 @@ def device_code() -> Dict[str, Any]:
 
     response_data = json.loads(res.text)
 
-    print(
-        "Enter {} at {}".format(
-            response_data["user_code"],
-            response_data["verification_url"]))
+    print("Enter {} at {}".format(response_data["user_code"],
+                                  response_data["verification_url"]))
 
     return response_data
 
