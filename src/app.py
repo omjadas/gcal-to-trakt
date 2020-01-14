@@ -2,7 +2,7 @@ import datetime
 import json
 import os
 from time import sleep
-from typing import Any, Dict, Optional
+from typing import List, Optional, TypedDict
 from urllib.parse import urlencode
 
 from dotenv import load_dotenv
@@ -24,10 +24,48 @@ REDIS_URL = os.environ["REDIS_URL"]
 
 R = redis.from_url(REDIS_URL)
 
+AUTH_URL = "AUTH_URL"
 DEVICE_CODE = "DEVICE_CODE"
+USER_CODE = "USER_CODE"
 ACCESS_TOKEN = "ACCESS_TOKEN"
 REFRESH_TOKEN = "REFRESH_TOKEN"
 TOKEN_EXPIRY = "TOKEN_EXPIRY"
+
+
+class DeviceCode(TypedDict):
+    device_code: str
+    user_code: str
+    verification_url: str
+    expires_in: int
+    interval: int
+
+
+class GetToken(TypedDict):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
+    created_at: int
+
+
+class MovieIDs(TypedDict):
+    trakt: int
+    slug: str
+    imdb: str
+    tmdb: int
+
+
+class Movie(TypedDict):
+    title: str
+    year: int
+    ids: MovieIDs
+
+
+class SearchResult(TypedDict):
+    type: str
+    score: float
+    movie: Movie
 
 
 def redis_string(key: str, default: None = None) -> Optional[str]:
@@ -36,7 +74,7 @@ def redis_string(key: str, default: None = None) -> Optional[str]:
     return byt.decode("utf-8") if byt is not None else default
 
 
-def device_code() -> Dict[str, Any]:
+def device_code() -> DeviceCode:
     payload = {
         "client_id": CLIENT_ID
     }
@@ -49,7 +87,7 @@ def device_code() -> Dict[str, Any]:
                         data=json.dumps(payload),
                         headers=headers)
 
-    response_data = json.loads(res.text)
+    response_data: DeviceCode = json.loads(res.text)
 
     print("Enter {} at {}".format(response_data["user_code"],
                                   response_data["verification_url"]))
@@ -57,7 +95,7 @@ def device_code() -> Dict[str, Any]:
     return response_data
 
 
-def get_token(interval: float, refresh: bool = False):
+def get_token(interval: float, refresh: bool = False) -> Optional[GetToken]:
     if not refresh:
         payload = {
             "code": redis_string(DEVICE_CODE),
@@ -88,6 +126,8 @@ def get_token(interval: float, refresh: bool = False):
         print("Success")
         return json.loads(res.text)
     elif code == 400:
+        print("Ensure you have entered {} at {}".format(redis_string(USER_CODE),
+                                                        redis_string(AUTH_URL)))
         sleep(interval)
         return get_token(interval)
     elif code == 404:
@@ -106,9 +146,11 @@ def get_token(interval: float, refresh: bool = False):
         exit()
     elif code == 429:
         print("Slow Down")
+    else:
+        print("Unknown error code: {}".format(code))
 
 
-def refresh_token():
+def refresh_token() -> Optional[GetToken]:
     return get_token(5, True)
 
 
@@ -142,7 +184,7 @@ def checkin(event: str) -> None:
     notify(movie["title"])
 
 
-def search(movie: str) -> Dict[str, Any]:
+def search(movie: str) -> SearchResult:
     """Search for a movie on Trakt.tv"""
     headers = {
         'Content-Type': 'application/json',
@@ -160,7 +202,7 @@ def search(movie: str) -> Dict[str, Any]:
     res = requests.get("{}/search/movie?{}".format(TRAKT_URL, params),
                        headers=headers)
 
-    response_body = json.loads(res.text)
+    response_body: List[SearchResult] = json.loads(res.text)
 
     return response_body[0]
 
@@ -194,6 +236,8 @@ def main() -> None:
         code = device_code()
         interval = code["interval"]
         R.set(DEVICE_CODE, code["device_code"])
+        R.set(AUTH_URL, code["verification_url"])
+        R.set(USER_CODE, code["user_code"])
     if redis_string(ACCESS_TOKEN) is None:
         token = get_token(interval)
         R.set(ACCESS_TOKEN, token["access_token"])
@@ -201,8 +245,10 @@ def main() -> None:
         R.set(TOKEN_EXPIRY, token["created_at"] + token["expires_in"])
 
     while True:
-        if datetime.datetime.utcnow() >= datetime.datetime.utcfromtimestamp(
-                float(redis_string(TOKEN_EXPIRY))):
+        expiry = redis_string(TOKEN_EXPIRY)
+        if expiry is not None and \
+                datetime.datetime.utcnow() >= \
+                datetime.datetime.utcfromtimestamp(float(expiry)):
             print("Access tokens expired, refreshing")
             new_tokens = refresh_token()
             R.set(ACCESS_TOKEN, new_tokens["access_token"])
@@ -213,9 +259,10 @@ def main() -> None:
         print("Checking for event")
         event = gcal.current_event()
         if event is not None:
-            if event[0] is not None:
-                checkin(event[0])
-            sleep_until(event[-1])
+            event_name = event[0]
+            if event_name is not None:
+                checkin(event_name)
+            sleep_until(event[2])
             print("Finished sleeping\n")
             continue
         print("No event found")
