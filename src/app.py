@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import redis
 import requests
 
-import gcal
+from src import gcal
 
 load_dotenv()
 
