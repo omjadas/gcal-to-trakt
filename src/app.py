@@ -70,8 +70,8 @@ class SearchResult(TypedDict):
 
 def redis_string(key: str, default: None = None) -> Optional[str]:
     """Get a value from redis and decode it to a string"""
-    byt = R.get(key)
-    return byt.decode("utf-8") if byt is not None else default
+    byte = R.get(key)
+    return byte.decode("utf-8") if byte is not None else default
 
 
 def device_code() -> DeviceCode:
