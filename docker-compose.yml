@@ -5,6 +5,8 @@ services:
     image: gcal-to-trakt:latest
     env_file:
       - ".env"
+    environment:
+      REDIS_URL: redis://redis:6379/0
     restart: unless-stopped
   redis:
     image: redis:5
