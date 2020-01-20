@@ -1,1 +1,1 @@
-worker: python -u src/app.py
+worker: python -u -m src.app

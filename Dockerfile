@@ -11,4 +11,4 @@ RUN pipenv install --system
 
 COPY . ./
 
-CMD [ "python", "-u", "src/app.py" ]
+CMD [ "python", "-u", "-m", "src.app" ]
