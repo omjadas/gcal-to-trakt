@@ -1,1 +1,8 @@
 .env
+.gitignore
+client_secret.json
+example.env
+LICENSE
+Procfile
+README.md
+runtime.txt
