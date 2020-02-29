@@ -224,7 +224,7 @@ def notify(movie: str) -> None:
     """Notify IFTTT about a checkin"""
     payload = {"value1": movie}
 
-    res = requests.get(
+    res = requests.post(
         "https://maker.ifttt.com/trigger/{}/with/key/{}".format(
             IFTTT_EVENT,
             IFTTT_KEY),
