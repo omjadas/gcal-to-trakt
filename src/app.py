@@ -83,14 +83,20 @@ def device_code() -> DeviceCode:
         "Content-Type": "application/json"
     }
 
-    res = requests.post("{}/oauth/device/code".format(TRAKT_URL),
-                        data=json.dumps(payload),
-                        headers=headers)
+    res = requests.post(
+        "{}/oauth/device/code".format(TRAKT_URL),
+        data=json.dumps(payload),
+        headers=headers
+    )
 
     response_data: DeviceCode = json.loads(res.text)
 
-    print("Enter {} at {}".format(response_data["user_code"],
-                                  response_data["verification_url"]))
+    print(
+        "Enter {} at {}".format(
+            response_data["user_code"],
+            response_data["verification_url"]
+        )
+    )
 
     return response_data
 
@@ -117,9 +123,12 @@ def get_token(interval: float, refresh: bool = False) -> Optional[GetToken]:
         "Content-Type": "application/json"
     }
 
-    res = requests.post(url.format(TRAKT_URL),
-                        data=json.dumps(payload),
-                        headers=headers)
+    res = requests.post(
+        url.format(TRAKT_URL),
+        data=json.dumps(payload),
+        headers=headers
+    )
+
     code = res.status_code
 
     if code == 200:
@@ -177,9 +186,11 @@ def checkin(event: str) -> None:
         "trakt-api-key": CLIENT_ID
     }
 
-    requests.post("{}/checkin".format(TRAKT_URL),
-                  data=json.dumps(payload),
-                  headers=headers)
+    requests.post(
+        "{}/checkin".format(TRAKT_URL),
+        data=json.dumps(payload),
+        headers=headers
+    )
 
     notify(movie["title"])
 
@@ -199,8 +210,10 @@ def search(movie: str) -> SearchResult:
 
     params = urlencode(params)
 
-    res = requests.get("{}/search/movie?{}".format(TRAKT_URL, params),
-                       headers=headers)
+    res = requests.get(
+        "{}/search/movie?{}".format(TRAKT_URL, params),
+        headers=headers
+    )
 
     response_body: List[SearchResult] = json.loads(res.text)
 
@@ -211,10 +224,12 @@ def notify(movie: str) -> None:
     """Notify IFTTT about a checkin"""
     payload = {"value1": movie}
 
-    res = requests.get("https://maker.ifttt.com/trigger/{}/with/key/{}".format(
-        IFTTT_EVENT,
-        IFTTT_KEY),
-                       data=json.dumps(payload))
+    res = requests.get(
+        "https://maker.ifttt.com/trigger/{}/with/key/{}".format(
+            IFTTT_EVENT,
+            IFTTT_KEY),
+        data=json.dumps(payload)
+    )
 
     if res.status_code == 200:
         print("Checked in to {}".format(movie))
@@ -253,8 +268,10 @@ def main() -> None:
             new_tokens = refresh_token()
             R.set(ACCESS_TOKEN, new_tokens["access_token"])
             R.set(REFRESH_TOKEN, new_tokens["refresh_token"])
-            R.set(TOKEN_EXPIRY,
-                  new_tokens["created_at"] + new_tokens["expires_in"])
+            R.set(
+                TOKEN_EXPIRY,
+                new_tokens["created_at"] + new_tokens["expires_in"]
+            )
 
         print("Checking for event")
         event = gcal.current_event()
