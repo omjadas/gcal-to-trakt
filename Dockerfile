@@ -1,4 +1,4 @@
-FROM python:3.8 as deps
+FROM python:3.8-alpine
 
 RUN pip install -U pip
 RUN pip install pipenv
