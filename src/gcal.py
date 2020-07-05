@@ -28,8 +28,6 @@ def current_event() -> Optional[Tuple[Optional[str],
     events = CLIENT.get_events()
     current = datetime.datetime.utcnow()
 
-    if not events:
-        print('No event found.')
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
         end = event['end'].get('dateTime', event['end'].get('date'))
