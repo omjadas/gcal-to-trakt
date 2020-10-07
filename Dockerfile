@@ -1,4 +1,4 @@
-FROM python:3.9.0-alpine
+FROM python:3.9-alpine
 
 RUN pip install -U pip
 RUN pip install pipenv
