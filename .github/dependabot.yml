@@ -1,0 +1,20 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Australia/Sydney
+  open-pull-requests-limit: 99
+  reviewers:
+  - omjadas
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Australia/Sydney
+  open-pull-requests-limit: 99
+  reviewers:
+  - omjadas
