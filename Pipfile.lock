@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e84818ecfccf5ce59c8db5036c662b91fe237d49d71e76149084cd6ef061b70e"
+            "sha256": "4857e418234862f3c3608e7abd13fd86a2fbd44e28b9bbf8d3119c38e92f3f03"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.8"
+            "python_version": "3.9"
         },
         "sources": [
             {
@@ -33,27 +33,27 @@
         },
         "charset-normalizer": {
             "hashes": [
-                "sha256:5d209c0a931f215cee683b6445e2d77677e7e75e159f78def0db09d68fafcaa6",
-                "sha256:5ec46d183433dcbd0ab716f2d7f29d8dee50505b3fdb40c6b985c7c4f5a3591f"
+                "sha256:e019de665e2bcf9c2b64e2e5aa025fa991da8720daa3c1138cadd2fd1856aed0",
+                "sha256:f7af805c321bfa1ce6714c51f254e0d5bb5e5834039bc17db7ebe3a4cec9492b"
             ],
             "markers": "python_version >= '3'",
-            "version": "==2.0.6"
+            "version": "==2.0.7"
         },
         "google-api-core": {
             "hashes": [
-                "sha256:5ec27b942b34d04559cbf3674430bb83fc3d74e7d32b8bbd31c4466e71740b83",
-                "sha256:c344e1aacd8330527c5130bdfe03118d8859ce798bcf0e5d23770ab6873e0615"
+                "sha256:39ae7ca2208090c2942ebe1b38ca2928441a14b795c725717d38d7e30adb5fbf",
+                "sha256:646d9399c3c478fe475cfe523e84572ab31a340814ea977fb2774eca5a6549a2"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==2.1.0"
+            "version": "==2.1.1"
         },
         "google-api-python-client": {
             "hashes": [
-                "sha256:1c6267c7f018d86afc62dd8ec844a3e7189022a35ee239ed704cbda010888998",
-                "sha256:75edc13a5c6dd9ff6f47721162a845edc343b4987ee059842e9a7905ad62e917"
+                "sha256:66389e23fdd23dc7fabf3235afc4bd9bf4d1332e960aa7c058f17ea8848dae35",
+                "sha256:faac5b276f90de1258d553b4dcf1cad92827b047ea31819927514b60e62616da"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==2.24.0"
+            "version": "==2.26.1"
         },
         "google-auth": {
             "hashes": [
@@ -95,11 +95,11 @@
         },
         "idna": {
             "hashes": [
-                "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a",
-                "sha256:467fbad99067910785144ce333826c71fb0e63a425657295239737f7ecd125f3"
+                "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff",
+                "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
             ],
             "markers": "python_version >= '3'",
-            "version": "==3.2"
+            "version": "==3.3"
         },
         "protobuf": {
             "hashes": [
@@ -214,11 +214,11 @@
         },
         "uritemplate": {
             "hashes": [
-                "sha256:07620c3f3f8eed1f12600845892b0e036a2420acf513c53f7de0abd911a5894f",
-                "sha256:5af8ad10cec94f215e3f48112de2022e1d5a37ed427fbd88652fa908f2ab7cae"
+                "sha256:4346edfc5c3b79f694bccd6d6099a322bbeb628dbf2cd86eea55a456ce5124f0",
+                "sha256:830c08b8d99bdd312ea4ead05994a38e8936266f84b9a7878232db50b044e02e"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==3.0.1"
+            "markers": "python_version >= '3.6'",
+            "version": "==4.1.1"
         },
         "urllib3": {
             "hashes": [
@@ -299,11 +299,11 @@
         },
         "pycodestyle": {
             "hashes": [
-                "sha256:514f76d918fcc0b55c6680472f0a37970994e07bbb80725808c17089be302068",
-                "sha256:c389c1d06bf7904078ca03399a4816f974a1d590090fecea0c63ec26ebaf1cef"
+                "sha256:720f8b39dde8b293825e7ff02c475f3077124006db4f440dcbc9a20b76548a20",
+                "sha256:eddd5847ef438ea1c7870ca7eb78a9d47ce0cdb4851a5523949f2601d0cbbe7f"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==2.7.0"
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
+            "version": "==2.8.0"
         },
         "pylint": {
             "hashes": [
