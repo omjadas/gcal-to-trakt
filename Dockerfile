@@ -1,4 +1,4 @@
-FROM python:3.10.5-alpine
+FROM python:3.11.0b5-alpine
 
 RUN pip install -U pip
 RUN pip install pipenv
