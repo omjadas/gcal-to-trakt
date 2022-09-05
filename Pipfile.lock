@@ -58,11 +58,11 @@
         },
         "google-api-core": {
             "hashes": [
-                "sha256:06f7244c640322b508b125903bb5701bebabce8832f85aba9335ec00b3d02edc",
-                "sha256:93c6a91ccac79079ac6bbf8b74ee75db970cc899278b97d53bc012f35908cf50"
+                "sha256:1d053734f14591939e7764e99c31253fed46bf2578da0dcd82821f17a6dd991c",
+                "sha256:325529859836a479244b0882c1a77320fd35cb108df2ec1232e3e908ea56eda4"
             ],
-            "markers": "python_version >= '3.6'",
-            "version": "==2.8.2"
+            "markers": "python_version >= '3.7'",
+            "version": "==2.10.0"
         },
         "google-api-python-client": {
             "hashes": [
@@ -192,11 +192,11 @@
         },
         "python-dotenv": {
             "hashes": [
-                "sha256:b7e3b04a59693c42c36f9ab1cc2acc46fa5df8c78e178fc33a8d4cd05c8d498f",
-                "sha256:d92a187be61fe482e4fd675b6d52200e7be63a12b724abbf931a40ce4fa92938"
+                "sha256:1684eb44636dd462b66c3ee016599815514527ad99965de77f43e0944634a7e5",
+                "sha256:b77d08274639e3d34145dfa6c7008e66df0f04b7be7a75fd0d5292c191d79045"
             ],
             "index": "pypi",
-            "version": "==0.20.0"
+            "version": "==0.21.0"
         },
         "redis": {
             "hashes": [
@@ -320,11 +320,11 @@
     "develop": {
         "astroid": {
             "hashes": [
-                "sha256:39fa822c82dc112f5072a208ddf01c58184043aa90e3e469786fa0520c71aaa7",
-                "sha256:af71cdc0775b6e4d88076746620e2c8cd1bf4533a9977cfdd00eeea97d95530c"
+                "sha256:396c88d0a58d7f8daadf730b2ce90838bf338c6752558db719ec6f99c18ec20e",
+                "sha256:d612609242996c4365aeb0345e61edba34363eaaba55f1c0addf6a98f073bef6"
             ],
             "markers": "python_full_version >= '3.7.2'",
-            "version": "==2.12.4"
+            "version": "==2.12.5"
         },
         "autopep8": {
             "hashes": [
