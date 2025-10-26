@@ -21,7 +21,7 @@
                 "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c",
                 "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"
             ],
-            "markers": "python_full_version < '3.11.3'",
+            "markers": "python_version >= '3.8'",
             "version": "==5.0.1"
         },
         "cachetools": {
@@ -240,12 +240,12 @@
         },
         "redis": {
             "hashes": [
-                "sha256:16f2e22dff21d5125e8481515e386711a34cbec50f0e44413dd7d9c060a54e0f",
-                "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4"
+                "sha256:1e66c8355b3443af78367c4937484cd875fdf9f5f14e1fed14aa95869e64f6d1",
+                "sha256:6546ada54354248a53a47342d36abe6172bb156f23d24f018fda2e3c06b9c97a"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.8'",
-            "version": "==5.2.1"
+            "markers": "python_version >= '3.9'",
+            "version": "==7.0.0"
         },
         "requests": {
             "hashes": [
